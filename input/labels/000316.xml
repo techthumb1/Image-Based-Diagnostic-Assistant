@@ -1,0 +1,38 @@
+<annotation>
+	<folder>images</folder>
+	<filename>000316.jpg</filename>
+	<path>/home/vini/Desktop/data_300x300/images/000316.jpg</path>
+	<source>
+		<database>Unknown</database>
+	</source>
+	<size>
+		<width>300</width>
+		<height>300</height>
+		<depth>3</depth>
+	</size>
+	<segmented>0</segmented>
+	<object>
+		<name>aggregate reticulocyte</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>99</xmin>
+			<ymin>195</ymin>
+			<xmax>131</xmax>
+			<ymax>224</ymax>
+		</bndbox>
+	</object>
+	<object>
+		<name>punctate reticulocyte</name>
+		<pose>Unspecified</pose>
+		<truncated>0</truncated>
+		<difficult>0</difficult>
+		<bndbox>
+			<xmin>267</xmin>
+			<ymin>82</ymin>
+			<xmax>297</xmax>
+			<ymax>114</ymax>
+		</bndbox>
+	</object>
+</annotation>
