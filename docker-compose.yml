@@ -1,4 +1,4 @@
-version: '3'
+version: '3.8'
 services:
   frontend:
     build: ./frontend
@@ -6,10 +6,9 @@ services:
       - "3000:3000"
     volumes:
       - ./frontend:/app
-    depends_on:
-      - backend
     environment:
       - NODE_ENV=production
+
   backend:
     build: ./backend
     ports:
@@ -18,6 +17,8 @@ services:
       - ./backend:/app
     depends_on:
       - redis
+    command: gunicorn --config gunicorn_config.py app:app
+
   redis:
     image: "redis:alpine"
     ports:
