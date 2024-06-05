@@ -1,0 +1,10 @@
+model:
+  path: 'models/path_to_model/model.h5'
+
+uploads:
+  folder: 'uploads'
+  allowed_extensions: ['jpg', 'jpeg', 'png', 'gif']
+
+app:
+  secret_key: 'your_secret_key_here'
+  debug: false
