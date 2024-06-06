@@ -190,3 +190,4 @@ jspm_packages/
 
 # Docker files
 docker-compose.override.ymlmodels/brain_tumor_segmentation_model.keras
+models/brain_tumor_segmentation_model.keras
