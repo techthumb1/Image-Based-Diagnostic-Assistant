@@ -1,12 +1,13 @@
 # tests/test_app.py
-import os
 import sys
-import unittest
-from app import app
-from config.test_config import TestConfig
+import os
 
 # Add the backend directory to sys.path
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '../backend')))
+
+import unittest
+from app import app  # Adjust this line if necessary to reflect the correct module path
+from config.test_config import TestConfig
 
 class BasicTests(unittest.TestCase):
     def setUp(self):
