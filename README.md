@@ -2,7 +2,7 @@
 
 ## Overview
 
-The **Image-Based Diagnostic Assistant** is a cutting-edge web application designed to assist in diagnosing diseases from medical images. Utilizing advanced deep learning models, this tool provides accurate diagnostic predictions for a variety of medical conditions. The application features a user-friendly interface where users can upload images, receive predictions, and access detailed information about the diagnostic process.
+The **Image-Based Diagnostic Assistant** is a cutting-edge web application designed to assist in diagnosing diseases from medical images. Utilizing advanced deep learning models, this tool provides accurate diagnostic predictions for a variety of medical conditions. The application features a user-friendly interface where medical professionals or basic users can upload images, receive predictions, and access detailed information about the diagnostic process.
 
 ## Features
 
