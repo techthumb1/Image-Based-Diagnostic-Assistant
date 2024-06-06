@@ -25,3 +25,5 @@ torch==1.10.0
 nibabel==5.2.1
 albumentations==1.4.7
 Werkzeug ==3.0.3
+pytest==8.2.2
+Flask-Testing==0.8.1

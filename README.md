@@ -110,7 +110,7 @@ The Image-Based Diagnostic Assistant has shown significant potential in assistin
 
 ## Contributing
 
-We welcome contributions from the community. To contribute to this project, please follow these steps:
+I welcome contributions from the community. To contribute to this project, please follow these steps:
 
 1. Fork the repository.
 2. Create a new branch for your feature or bug fix.
@@ -126,11 +126,11 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 ## Contact
 
-For questions, feedback, or collaboration opportunities, please reach out to us at [your-email@example.com].
+For questions, feedback, or collaboration opportunities, please reach out to me at [robinsonjason761@gmail.com].
 
 ## Acknowledgements
 
-We would like to thank the following resources and communities for their support and contributions:
+I would like to thank the following resources and communities for their support and contributions:
 
 - [TensorFlow](https://www.tensorflow.org/)
 - [Keras](https://keras.io/)
