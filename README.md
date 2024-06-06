@@ -126,7 +126,7 @@ This project is licensed under the MIT License. See the `LICENSE` file for more 
 
 ## Contact
 
-For questions, feedback, or collaboration opportunities, please reach out to me at [robinsonjason761@gmail.com].
+For questions, feedback, or collaboration opportunities, please reach out to me at [robinsonjason761@gmail.com](https://mail.google.com/mail/u/0/#inbox).
 
 ## Acknowledgements
 
