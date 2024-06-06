@@ -189,4 +189,4 @@ jspm_packages/
 .DS_Store
 
 # Docker files
-docker-compose.override.yml
+docker-compose.override.ymlmodels/brain_tumor_segmentation_model.keras
