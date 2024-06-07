@@ -1,5 +1,5 @@
 model:
-  path: 'models/path_to_model/model.h5'
+  path: 'models/segformer_pruned_model'
 
 uploads:
   folder: 'uploads'
