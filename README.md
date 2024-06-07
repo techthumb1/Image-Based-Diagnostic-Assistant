@@ -118,7 +118,7 @@ I welcome contributions from the community. To contribute to this project, pleas
 4. Push your changes to your fork.
 5. Submit a pull request to the main repository.
 
-Please ensure your code adheres to our coding standards and includes appropriate tests.
+Please ensure your code adheres to the coding standards and includes appropriate tests.
 
 ## License
 

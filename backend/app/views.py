@@ -1,9 +1,12 @@
 import os
 import logging
-from flask import Flask, render_template, request, redirect, url_for, flash
+from flask import Config, Flask, config, render_template, request, redirect, url_for, flash
 import tensorflow as tf
 from utils.config import load_config
 from werkzeug.utils import secure_filename
+from transformers import SegformerForImageClassification, SegformerImageProcessor
+from PIL import Image
+import torch
 
 app = Flask(__name__)
 app.config.from_object(Config)
