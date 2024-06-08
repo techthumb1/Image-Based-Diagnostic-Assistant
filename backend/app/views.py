@@ -1,4 +1,5 @@
 import os
+import numpy as np
 import logging
 from flask import Flask, render_template, request, redirect, url_for, flash
 from transformers import SegformerForImageClassification, SegformerImageProcessor
@@ -55,10 +56,20 @@ def upload_file():
         if file and allowed_file(file.filename):
             filename = secure_filename(file.filename)
             filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+
+            # Ensure the uploads directory exists
+            if not os.path.exists(app.config['UPLOAD_FOLDER']):
+                os.makedirs(app.config['UPLOAD_FOLDER'])
+
             file.save(filepath)
             try:
-                prediction = model_predict(filepath)
-                return render_template('result.html', prediction=prediction)
+                image_array = preprocess_image(filepath)
+                if image_array is not None:
+                    prediction = model_predict(image_array)
+                    return render_template('result.html', prediction=prediction)
+                else:
+                    flash('Failed to preprocess image.')
+                    return redirect(request.url)
             except Exception as e:
                 logger.error(f"Prediction failed: {e}")
                 flash('An error occurred while processing the file.')
