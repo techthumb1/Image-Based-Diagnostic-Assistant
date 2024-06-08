@@ -1,25 +1,8 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Home</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <h1>Welcome to the Image-Based Diagnostic Assistant!</h1>
-    <p>Here, you can upload an image of a MRI, X-Ray, or CT scan and receive a diagnosis from the AI model. 
-       The model is trained to detect and classify a variety of diseases and conditions, including cancer, 
-       brain lesions, fractures, and infections. To get started, click the "Upload" link in the navigation menu above.</p>
-    <nav>
-        <ul>
-            <li><a href="{{ url_for('upload_file') }}">Upload</a></li>
-            <li><a href="{{ url_for('about') }}">About</a></li>
-            <li><a href="{{ url_for('contact') }}">Contact</a></li>
-            <li><a href="{{ url_for('faq') }}">FAQ</a></li>
-            <li><a href="{{ url_for('privacy') }}">Privacy Policy</a></li>
-            <li><a href="{{ url_for('terms') }}">Terms and Conditions</a></li>
-        </ul>
-    </nav>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<div class="text-center">
+    <h1>Welcome to the Image-Based Diagnostic Assistant</h1>
+    <p class="lead">Upload your medical images for diagnosis.</p>
+    <a href="/upload" class="btn btn-primary">Upload Image</a>
+</div>
+{% endblock %}
