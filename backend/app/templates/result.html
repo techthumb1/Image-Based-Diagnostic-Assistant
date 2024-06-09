@@ -1,8 +1,26 @@
 {% extends "base.html" %}
 {% block content %}
-<div class="container">
+<div class="container mt-4">
     <h2>Prediction Result</h2>
-    <p class="lead">The predicted class index is: {{ prediction }}</p>
-    <a href="/upload" class="btn btn-primary">Upload Another Image</a>
+    <div class="card mt-3">
+        <div class="card-header">
+            Diagnostic Results
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Predicted Class Index: {{ prediction }}</h5>
+            <p class="card-text"><strong>Confidence Score:</strong> {{ confidence_score }}</p>
+            <p class="card-text"><strong>Filename:</strong> {{ filename }}</p>
+            <p class="card-text"><strong>Image Shape:</strong> {{ image_shape }}</p>
+            <p class="card-text">Additional statistical and informative data will be displayed here.</p>
+            <!-- Add more statistical and informative details as needed -->
+            <!-- Add classification scores, image of the data -->
+             <p class="card-text"><strong>Classification Scores:</strong> {{ classification_scores }}</p>
+            <img src="{{ image_path }}" class="img-fluid mt-3" alt="Uploaded Image">
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="/upload" class="btn btn-primary">Upload Another Image</a>
+        <a href="/" class="btn btn-secondary">Home</a>
+    </div>
 </div>
 {% endblock %}
