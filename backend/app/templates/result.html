@@ -11,11 +11,14 @@
             <p class="card-text"><strong>Confidence Score:</strong> {{ confidence_score }}</p>
             <p class="card-text"><strong>Filename:</strong> {{ filename }}</p>
             <p class="card-text"><strong>Image Shape:</strong> {{ image_shape }}</p>
+            <p class="card-text"><strong>Accuracy:</strong> {{ accuracy }}</p>
+            <p class="card-text"><strong>Precision:</strong> {{ precision }}</p>
+            <p class="card-text"><strong>Recall:</strong> {{ recall }}</p>
+            <p class="card-text"><strong>F1 Score:</strong> {{ f1 }}</p>
+            <p class="card-text"><strong>Confusion Matrix:</strong></p>
             <p class="card-text">Additional statistical and informative data will be displayed here.</p>
-            <!-- Add more statistical and informative details as needed -->
-            <!-- Add classification scores, image of the data -->
-             <p class="card-text"><strong>Classification Scores:</strong> {{ classification_scores }}</p>
-            <img src="{{ image_path }}" class="img-fluid mt-3" alt="Uploaded Image">
+            <p class="card-text"><strong>Classification Scores:</strong> {{ classification_scores }}</p>
+            <pre>{{ conf_matrix }}</pre>
         </div>
     </div>
     <div class="mt-4">

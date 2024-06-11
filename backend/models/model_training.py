@@ -2,40 +2,10 @@ import os
 import torch
 import torch.nn as nn
 import torch.optim as optim
-from torchvision import models, transforms
-from torch.utils.data import DataLoader, Dataset
-from PIL import Image
-import numpy as np
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score, confusion_matrix
-
-# Define dataset
-class CustomDataset(Dataset):
-    def __init__(self, image_dir, transform=None):
-        self.image_dir = image_dir
-        self.transform = transform
-        self.image_paths = [os.path.join(image_dir, fname) for fname in os.listdir(image_dir) if fname.endswith(('.png', '.jpg', '.jpeg', '.bmp', '.dcm'))]
-
-    def __len__(self):
-        return len(self.image_paths)
-
-    def __getitem__(self, idx):
-        img_path = self.image_paths[idx]
-        image = Image.open(img_path).convert('RGB')
-        if self.transform:
-            image = self.transform(image)
-        return image
-
-# Data transformations
-transform = transforms.Compose([
-    transforms.Resize((224, 224)),
-    transforms.ToTensor(),
-])
-
-# Load data
-def load_data(image_dir, batch_size=32):
-    dataset = CustomDataset(image_dir=image_dir, transform=transform)
-    dataloader = DataLoader(dataset, batch_size=batch_size, shuffle=True)
-    return dataloader
+from torch.utils.data import DataLoader
+from torchvision import models
+from transformers import SegformerForImageClassification
+from .data_loader import ImageDataset, transform
 
 # Load pre-trained model
 def get_model(num_classes):
@@ -45,21 +15,31 @@ def get_model(num_classes):
     return model
 
 # Training loop
-def train_model(model, dataloader, num_epochs=10, learning_rate=0.001):
+def train_model(model, train_loader, val_loader, num_epochs=10, learning_rate=0.001):
     criterion = nn.CrossEntropyLoss()
-    optimizer = optim.Adam(model.parameters(), lr=learning_rate)
+    optimizer = optim.AdamW(model.parameters(), lr=learning_rate)
     
     model.train()
     for epoch in range(num_epochs):
         running_loss = 0.0
-        for inputs in dataloader:
+        for inputs, labels in train_loader:
             optimizer.zero_grad()
             outputs = model(inputs)
             loss = criterion(outputs, labels)
             loss.backward()
             optimizer.step()
             running_loss += loss.item()
-        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {running_loss/len(dataloader)}')
+        print(f'Epoch {epoch+1}/{num_epochs}, Loss: {running_loss/len(train_loader)}')
+
+        # Validation
+        model.eval()
+        val_loss = 0.0
+        with torch.no_grad():
+            for inputs, labels in val_loader:
+                outputs = model(inputs)
+                loss = criterion(outputs, labels)
+                val_loss += loss.item()
+        print(f'Validation Loss: {val_loss/len(val_loader)}')
 
     return model
 
@@ -69,8 +49,7 @@ def save_model(model, path):
 
 # Load model
 def load_model(path, num_classes):
-    model = get_model(num_classes)
-    model.load_state_dict(torch.load(path))
+    model = SegformerForImageClassification.from_pretrained(path)
     return model
 
 # Evaluate model
@@ -80,16 +59,10 @@ def evaluate_model(model, dataloader):
     all_labels = []
     
     with torch.no_grad():
-        for inputs in dataloader:
+        for inputs, labels in dataloader:
             outputs = model(inputs)
             _, preds = torch.max(outputs, 1)
             all_preds.extend(preds.cpu().numpy())
             all_labels.extend(labels.cpu().numpy())
 
-    accuracy = accuracy_score(all_labels, all_preds)
-    precision = precision_score(all_labels, all_preds, average='weighted')
-    recall = recall_score(all_labels, all_preds, average='weighted')
-    f1 = f1_score(all_labels, all_preds, average='weighted')
-    conf_matrix = confusion_matrix(all_labels, all_preds)
-    
-    return accuracy, precision, recall, f1, conf_matrix
+    return all_labels, all_preds

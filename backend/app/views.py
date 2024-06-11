@@ -8,6 +8,8 @@ from PIL import UnidentifiedImageError
 import torch
 from utils.config import Config, load_yaml_config, apply_config
 from app.utils import load_and_preprocess_image, allowed_file
+from models.model_training import load_model, get_model
+from models.metrics import calculate_metrics
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.middleware.proxy_fix import ProxyFix
@@ -58,7 +60,7 @@ pruned_model_path = app.config.get('PRUNED_MODEL_PATH')
 feature_extractor_path = app.config.get('FEATURE_EXTRACTOR_PATH')
 
 try:
-    model = SegformerForImageClassification.from_pretrained(pruned_model_path, use_auth_token=hf_token)
+    model = load_model(pruned_model_path, num_classes=10)  # Assuming 10 classes
     feature_extractor = SegformerImageProcessor.from_pretrained(feature_extractor_path, use_auth_token=hf_token)
     logger.info("Model and feature extractor loaded successfully.")
 except Exception as e:
@@ -66,7 +68,7 @@ except Exception as e:
     raise
 
 def model_predict(image_array):
-    inputs = feature_extractor(images=image_array, return_tensors="pt")
+    inputs = feature_extractor(images=image_array, return_tensors="pt", do_rescale=False)  # Avoid rescaling again
     with torch.no_grad():
         outputs = model(**inputs)
     logits = outputs.logits
@@ -143,8 +145,14 @@ def upload_file():
                     prediction = model_predict(image_array)
                     confidence_score = np.max(torch.nn.functional.softmax(model(**feature_extractor(images=image_array, return_tensors="pt")).logits.detach(), dim=-1).numpy())
                     logger.info(f'Prediction: {prediction}, Confidence Score: {confidence_score}, Filename: {filename}, Image Shape: {image_array.shape}')
+                    
+                    # Calculate additional metrics
+                    preds = [prediction]
+                    labels = [0]  # Use appropriate labels for actual evaluation
+                    accuracy, precision, recall, f1, conf_matrix = calculate_metrics(labels, preds)
+                    
                     flash(f'Prediction successful: {prediction} with confidence score {confidence_score:.2f}', 'success')
-                    return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_array.shape)
+                    return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_array.shape, accuracy=accuracy, precision=precision, recall=recall, f1=f1, conf_matrix=conf_matrix)
                 else:
                     flash('Failed to preprocess image.', 'danger')
                     return redirect(request.url)
@@ -164,8 +172,14 @@ def result():
     confidence_score = request.args.get('confidence_score')
     filename = request.args.get('filename')
     image_shape = request.args.get('image_shape')
-    logger.info(f'Result Page - Prediction: {prediction}, Confidence Score: {confidence_score}, Filename: {filename}, Image Shape: {image_shape}')
-    return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_shape)
+    accuracy = request.args.get('accuracy')
+    precision = request.args.get('precision')
+    recall = request.args.get('recall')
+    f1 = request.args.get('f1')
+    conf_matrix = request.args.get('conf_matrix')
+    
+    logger.info(f'Result Page - Prediction: {prediction}, Confidence Score: {confidence_score}, Filename: {filename}, Image Shape: {image_shape}, Accuracy: {accuracy}, Precision: {precision}, Recall: {recall}, F1: {f1}')
+    return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_shape, accuracy=accuracy, precision=precision, recall=recall, f1=f1, conf_matrix=conf_matrix)
 
 @app.route('/about')
 def about():
