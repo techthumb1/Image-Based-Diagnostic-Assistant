@@ -1,23 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Privacy Policy</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <h1>Privacy Policy</h1>
-    <p>This is the privacy policy page. We take your privacy seriously and have outlined our policies here.</p>
-    <nav>
-        <ul>
-            <li><a href="{{ url_for('home') }}">Home</a></li>
-            <li><a href="{{ url_for('upload_file') }}">Upload</a></li>
-            <li><a href="{{ url_for('about') }}">About</a></li>
-            <li><a href="{{ url_for('contact') }}">Contact</a></li>
-            <li><a href="{{ url_for('faq') }}">FAQ</a></li>
-            <li><a href="{{ url_for('terms') }}">Terms and Conditions</a></li>
-        </ul>
-    </nav>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<div class="container">
+    <h2>Privacy Policy</h2>
+    <p class="lead">Your privacy is important to us. This privacy statement provides information about the personal information that our application collects, and the ways in which we use that personal information.</p>
+    <h3>Personal Information Collection</h3>
+    <p>We may collect and use the following kinds of personal information:</p>
+    <ul>
+        <li>Information about your use of this website (including pages visited, time spent, etc.);</li>
+        <li>Information that you provide using for the purpose of registering with the website (including your email address);</li>
+        <li>Any other information that you send to us.</li>
+    </ul>
+    <h3>Using Personal Information</h3>
+    <p>We may use your personal information to:</p>
+    <ul>
+        <li>Administer this website;</li>
+        <li>Personalize the website for you;</li>
+        <li>Enable your access to and use of the website services;</li>
+        <li>Publish information about you on the website;</li>
+        <li>Send you marketing communications.</li>
+    </ul>
+    <h3>Securing Your Data</h3>
+    <p>We will take reasonable technical and organizational precautions to prevent the loss, misuse, or alteration of your personal information.</p>
+    <h3>Updating This Statement</h3>
+    <p>We may update this privacy policy by posting a new version on this website. You should check this page occasionally to ensure you are familiar with any changes.</p>
+    <h3>Contact Us</h3>
+    <p>If you have any questions about this privacy policy or our treatment of your personal information, please <a href="/contact">contact us</a>.</p>
+</div>
+{% endblock %}

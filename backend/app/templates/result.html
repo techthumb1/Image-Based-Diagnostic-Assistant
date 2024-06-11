@@ -1,25 +1,29 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Diagnosis Result</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
-</head>
-<body>
-    <h1>Prediction Result</h1>
-    <p>Prediction: {{ prediction }}</p>
-    <p>Confidence: {{ confidence }}%</p>
-    <nav>
-        <ul>
-            <li><a href="{{ url_for('home') }}">Home</a></li>
-            <li><a href="{{ url_for('upload_file') }}">Upload Another Image</a></li>
-            <li><a href="{{ url_for('about') }}">About</a></li>
-            <li><a href="{{ url_for('contact') }}">Contact</a></li>
-            <li><a href="{{ url_for('faq') }}">FAQ</a></li>
-            <li><a href="{{ url_for('privacy') }}">Privacy Policy</a></li>
-            <li><a href="{{ url_for('terms') }}">Terms and Conditions</a></li>
-        </ul>
-    </nav>
-</body>
-</html>
+{% extends "base.html" %}
+{% block content %}
+<div class="container mt-4">
+    <h2>Prediction Result</h2>
+    <div class="card mt-3">
+        <div class="card-header">
+            Diagnostic Results
+        </div>
+        <div class="card-body">
+            <h5 class="card-title">Predicted Class Index: {{ prediction }}</h5>
+            <p class="card-text"><strong>Confidence Score:</strong> {{ confidence_score }}</p>
+            <p class="card-text"><strong>Filename:</strong> {{ filename }}</p>
+            <p class="card-text"><strong>Image Shape:</strong> {{ image_shape }}</p>
+            <p class="card-text"><strong>Accuracy:</strong> {{ accuracy }}</p>
+            <p class="card-text"><strong>Precision:</strong> {{ precision }}</p>
+            <p class="card-text"><strong>Recall:</strong> {{ recall }}</p>
+            <p class="card-text"><strong>F1 Score:</strong> {{ f1 }}</p>
+            <p class="card-text"><strong>Confusion Matrix:</strong></p>
+            <p class="card-text">Additional statistical and informative data will be displayed here.</p>
+            <p class="card-text"><strong>Classification Scores:</strong> {{ classification_scores }}</p>
+            <pre>{{ conf_matrix }}</pre>
+        </div>
+    </div>
+    <div class="mt-4">
+        <a href="/upload" class="btn btn-primary">Upload Another Image</a>
+        <a href="/" class="btn btn-secondary">Home</a>
+    </div>
+</div>
+{% endblock %}
