@@ -196,3 +196,6 @@ models/brain_tumor_segmentation_model.keras
 input/labels/
 input/images/
 input/TEST/
+
+# Uploaded Images
+backend/uploads/
