@@ -8,17 +8,48 @@
         </div>
         <div class="card-body">
             <h5 class="card-title">Predicted Class Index: {{ prediction }}</h5>
-            <p class="card-text"><strong>Confidence Score:</strong> {{ confidence_score }}</p>
+            <p class="card-text"><strong>Confidence Score:</strong> {{ confidence_score }}<br>
+                The confidence score represents the model's certainty in its prediction. Higher values indicate greater confidence, which suggests that the model is more sure about its classification.</p>
             <p class="card-text"><strong>Filename:</strong> {{ filename }}</p>
             <p class="card-text"><strong>Image Shape:</strong> {{ image_shape }}</p>
-            <p class="card-text"><strong>Accuracy:</strong> {{ accuracy }}</p>
-            <p class="card-text"><strong>Precision:</strong> {{ precision }}</p>
-            <p class="card-text"><strong>Recall:</strong> {{ recall }}</p>
-            <p class="card-text"><strong>F1 Score:</strong> {{ f1 }}</p>
-            <p class="card-text"><strong>Confusion Matrix:</strong></p>
-            <p class="card-text">Additional statistical and informative data will be displayed here.</p>
-            <p class="card-text"><strong>Classification Scores:</strong> {{ classification_scores }}</p>
+            <hr>
+            <h5>Classification Metrics</h5>
+            <p class="card-text"><strong>Accuracy:</strong> {{ accuracy }}<br>
+                Accuracy measures the percentage of correctly classified samples over the total number of samples. A higher accuracy indicates better overall performance of the model in classifying the images correctly.</p>
+            <p class="card-text"><strong>Precision:</strong> {{ precision }}<br>
+                Precision indicates the proportion of true positive predictions among all positive predictions. Higher precision means fewer false positives, which is crucial for reducing the risk of misdiagnosis.</p>
+            <p class="card-text"><strong>Recall:</strong> {{ recall }}<br>
+                Recall (or sensitivity) measures the proportion of true positive predictions among all actual positives. Higher recall means fewer false negatives, ensuring that most of the actual positive cases are identified.</p>
+            <p class="card-text"><strong>F1 Score:</strong> {{ f1 }}<br>
+                The F1 Score is the harmonic mean of precision and recall, providing a balance between the two metrics. It is useful when the class distribution is imbalanced.</p>
+            <p class="card-text"><strong>Confusion Matrix:</strong><br>
+                The confusion matrix provides a detailed breakdown of true positives, true negatives, false positives, and false negatives. It helps in understanding the model's performance across different classes.</p>
             <pre>{{ conf_matrix }}</pre>
+            <hr>
+            <h5>Segmentation Metrics</h5>
+            <p class="card-text"><strong>Dice Coefficient:</strong> {{ dice }}<br>
+                The Dice Coefficient measures the overlap between the predicted segmentation and the ground truth. Values range from 0 (no overlap) to 1 (perfect overlap). Higher values indicate better segmentation quality.</p>
+            <p class="card-text"><strong>Intersection over Union (IoU):</strong> {{ iou }}<br>
+                IoU, also known as the Jaccard Index, measures the overlap between the predicted and ground truth masks. Values range from 0 (no overlap) to 1 (perfect overlap). Higher IoU indicates better segmentation accuracy.</p>
+            <p class="card-text"><strong>Pixel Accuracy:</strong> {{ pixel_accuracy }}<br>
+                Pixel Accuracy measures the percentage of correctly predicted pixels over the total number of pixels. Higher pixel accuracy means more pixels are correctly classified, indicating better overall performance.</p>
+            <p class="card-text"><strong>Mean Accuracy:</strong> {{ mean_accuracy }}<br>
+                Mean Accuracy measures the average accuracy across all classes. It provides an indication of how well the model performs on average across different regions of the image.</p>
+            <p class="card-text"><strong>Mean IoU:</strong> {{ mean_iou }}<br>
+                Mean IoU is the average Intersection over Union across all classes. It is a comprehensive measure of segmentation performance, especially useful in multi-class segmentation tasks.</p>
+            <p class="card-text"><strong>Boundary F1 Score (BF1):</strong> {{ bf1 }}<br>
+                The Boundary F1 Score measures the F1 score of the boundary pixels between the predicted segmentation and the ground truth. It is useful for evaluating the accuracy of the segmentation boundaries, which is crucial for precise medical diagnoses.</p>
+            <hr>
+            <h5>Overall Assessment</h5>
+            <p class="card-text">
+                <strong>Overall Performance:</strong> The metrics presented provide a comprehensive overview of the model's performance. High values in accuracy, precision, recall, and F1 score indicate that the model is reliable in classifying and segmenting medical images. 
+                <br><br>
+                <strong>Interpretation for Medical Professionals:</strong> For medical professionals, these metrics are crucial in understanding the model's strengths and weaknesses. High precision means the model has a low false positive rate, reducing the risk of incorrect positive diagnoses. High recall ensures that the model captures most of the actual positive cases, which is important for identifying all potential cases.
+                <br><br>
+                <strong>Advanced Insights:</strong> The Dice Coefficient and IoU are particularly important for segmentation tasks. High values in these metrics indicate that the model's segmentations closely match the ground truth, which is essential for applications like tumor detection or organ segmentation. The Boundary F1 Score adds an additional layer of evaluation, ensuring that the model not only segments accurately but also delineates the boundaries correctly.
+                <br><br>
+                <strong>Next Steps for Review:</strong> These results can be reviewed by subject matter experts to validate the model's performance in a clinical setting. Continuous monitoring and validation against new data are recommended to ensure the model remains accurate and reliable.
+            </p>
         </div>
     </div>
     <div class="mt-4">
