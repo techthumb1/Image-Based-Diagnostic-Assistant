@@ -203,3 +203,6 @@ backend/uploads/
 backend/labels/
 backend/masks/
 backend/images/
+
+# Backend models
+backend/models/unetpp_model.pth
