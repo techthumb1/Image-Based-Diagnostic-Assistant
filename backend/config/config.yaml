@@ -8,4 +8,7 @@ uploads:
 
 app:
   secret_key: 'SECRET_KEY'
-  debug: false
+  debug: true
+
+labels:
+  folder: 'backend/labels'

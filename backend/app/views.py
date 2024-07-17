@@ -16,13 +16,13 @@ from models.metrics import (
     pixel_accuracy,
     mean_accuracy,
     mean_iou,
-    boundary_f1_score,
-    compute_accuracy,
-    compute_precision,
-    compute_recall,
-    compute_f1_score,
-    compute_auc_roc,
-    compute_confusion_matrix
+    boundary_f1_score
+    #compute_accuracy,
+    #compute_precision,
+    #compute_recall,
+    #compute_f1_score,
+    #compute_auc_roc,
+    #compute_confusion_matrix
 )
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
@@ -48,7 +48,10 @@ import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*resume_download.*")
 
 app = Flask(__name__)
-apply_config(app)
+
+config = load_yaml_config('config/config.yaml')
+app.config.update(config)
+
 
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER')
 app.config['ALLOWED_EXTENSIONS'] = set(os.getenv('ALLOWED_EXTENSIONS').split(','))
@@ -57,6 +60,8 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 app.secret_key = os.getenv('SECRET_KEY')
 app.debug = os.getenv('DEBUG', 'false').lower() in ['true', '1']
 app.env = 'development'
+
+apply_config(app)
 
 db = SQLAlchemy(app)
 
@@ -158,47 +163,41 @@ def preprocess_image(image_path):
 
 
 # Prediction function
-def model_predict(image_tensor, model_type='segmentation'):
-    logger.info("Starting prediction...")
-    if not feature_extractor:
-        logger.error("Feature extractor is not initialized.")
-        raise ValueError("Feature extractor is not initialized.")
-
-    inputs = feature_extractor(images=image_tensor, return_tensors="pt", do_rescale=False)
-
-    if model_type == 'classification':
-        model = classification_model
-        inputs = inputs['pixel_values'].to(device)  # Ensure the correct key and move to device
-    elif model_type == 'segmentation':
-        model = segmentation_model
-        inputs = inputs['pixel_values'].to(device)
-    elif model_type == 'unetpp':
-        model = unetpp_model
-        inputs = inputs['pixel_values'].to(device)
+def classification_predict(image_tensor):
+    logger.info("Starting classification prediction...")
+    inputs = feature_extractor(images=image_tensor, return_tensors="pt", do_rescale=False)['pixel_values'].to(device)
+    with torch.no_grad():
+        outputs = classification_model(inputs)
+    
+    # Handle outputs directly
+    if hasattr(outputs, 'logits'):
+        logits = outputs.logits
     else:
-        raise ValueError(f"Unsupported model type: {model_type}")
+        logits = outputs
+    
+    predicted_class_idx = logits.argmax(-1).item()
+    confidence_score = np.max(torch.nn.functional.softmax(logits, dim=-1).cpu().numpy())
+    logger.info(f'Predicted class index: {predicted_class_idx}, Confidence score: {confidence_score}')
+    return predicted_class_idx, confidence_score
 
-    if not model:
-        logger.error(f"{model_type} model is not initialized.")
-        raise ValueError(f"{model_type} model is not initialized.")
+
+
+def segmentation_predict(image_tensor, model_type):
+    logger.info("Starting segmentation prediction...")
+    inputs = feature_extractor(images=image_tensor, return_tensors="pt", do_rescale=False)['pixel_values'].to(device)
+    
+    if model_type == 'unetpp':
+        model = unetpp_model
+    else:
+        model = segmentation_model
 
     with torch.no_grad():
-        if model_type == 'classification':
-            outputs = model(inputs)
-        else:
-            outputs = model(inputs)  # Remove pixel_values argument
+        outputs = model(inputs)
 
-    if model_type == 'classification':
-        logits = outputs.logits
-        predicted_class_idx = logits.argmax(-1).item()
-        confidence_score = np.max(torch.nn.functional.softmax(logits, dim=-1).numpy())
-        logger.info(f'Predicted class index: {predicted_class_idx}, Confidence score: {confidence_score}')
-        return predicted_class_idx, confidence_score
-    else:
-        logits = outputs  # For segmentation, logits is the direct output
-        predicted_mask = logits.argmax(dim=1).squeeze().cpu().numpy()
-        logger.info(f'Predicted mask shape: {predicted_mask.shape}')
-        return predicted_mask, None  # No confidence score for segmentation
+    predicted_mask = outputs.argmax(dim=1).squeeze().cpu().numpy()
+    logger.info(f'Predicted mask shape: {predicted_mask.shape}')
+    return predicted_mask
+
 
 
 @app.route('/')
@@ -250,23 +249,30 @@ def logout():
 
 def load_ground_truth_label(image_path, model_type):
     base_name = os.path.basename(image_path).split('.')[0]
-    logger.debug(f"Loading ground truth label for base name: {base_name}, model type: {model_type}")
     if model_type == 'classification':
-        label_path = os.path.join('backend', 'labels', f'{base_name}_label.txt')
-        if not os.path.exists(label_path):
-            raise FileNotFoundError(f"No such file or directory: '{label_path}'")
-        with open(label_path, 'r') as file:
-            label = int(file.read().strip())
+        label_path = os.path.join('labels', f'{base_name}_label.txt')
     elif model_type in ['segmentation', 'unetpp']:
-        label_path = os.path.join('backend', 'masks', f'{base_name}_label.png')
-        if not os.path.exists(label_path):
-            raise FileNotFoundError(f"No such file or directory: '{label_path}'")
-        label_image = Image.open(label_path)
-        label = np.array(label_image)
+        label_path = os.path.join('labels', f'{base_name}_label.png')
     else:
         raise ValueError("Unsupported model type for loading labels.")
-    
-    logger.debug(f"Loaded ground truth label from path: {label_path}")
+
+    # Get absolute path relative to the project root directory
+    label_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '..', label_path)
+
+    logger.info(f"Looking for ground truth label at {label_path}")
+
+    if not os.path.exists(label_path):
+        logger.error(f"No such file or directory: '{label_path}'")
+        raise FileNotFoundError(f"No such file or directory: '{label_path}'")
+
+    if model_type == 'classification':
+        with open(label_path, 'r') as file:
+            label = int(file.read().strip())
+    else:
+        label_image = Image.open(label_path)
+        label = np.array(label_image)
+
+    logger.info(f"Loaded ground truth label from {label_path}")
     return label
 
 
@@ -295,13 +301,13 @@ def upload_file():
         if file.filename == '':
             flash('No selected file', 'danger')
             return redirect(request.url)
-        if file and allowed_file(file.filename, app.config['ALLOWED_EXTENSIONS']):
+        if file and allowed_file(file.filename, app.config['uploads']['allowed_extensions']):
             filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            filepath = os.path.join(app.config['uploads']['folder'], filename)
 
             # Ensure the uploads directory exists
-            if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                os.makedirs(app.config['UPLOAD_FOLDER'])
+            if not os.path.exists(app.config['uploads']['folder']):
+                os.makedirs(app.config['uploads']['folder'])
 
             file.save(filepath)
             logger.info(f"File saved at: {filepath}")
@@ -310,96 +316,69 @@ def upload_file():
                 image_tensor = preprocess_image(filepath)
                 logger.info(f"Image tensor shape: {image_tensor.shape}")
                 if image_tensor is not None:
-                    if not feature_extractor or not (classification_model or segmentation_model or unetpp_model):
-                        logger.error("Model or feature extractor is not initialized.")
-                        flash('Model or feature extractor is not initialized.', 'danger')
-                        return redirect(request.url)
-                    
-                    prediction, confidence_score = model_predict(image_tensor, model_type=model_type)
+                    if model_type == 'classification':
+                        prediction, confidence_score = classification_predict(image_tensor)
+                    else:
+                        prediction = segmentation_predict(image_tensor, model_type)
+                        confidence_score = None
+
                     logger.info(f'Prediction: {prediction}, Confidence Score: {confidence_score}, Filename: {filename}, Image Shape: {image_tensor.shape}')
 
                     # Load ground truth label
-                    label = load_ground_truth_label(filepath, model_type)
-                    if isinstance(label, np.ndarray):
-                        logger.info(f"Loaded ground truth label with shape: {label.shape}")
+                    labels_folder = app.config['labels']['folder']
+                    label_filename = f"{os.path.splitext(filename)[0]}_label.txt"
+                    label_path = os.path.abspath(os.path.join(labels_folder, label_filename))
+                    logger.info(f"Looking for ground truth label at {label_path}")
+                    if os.path.exists(label_path):
+                        label = load_ground_truth_label(label_path, model_type)
+                        logger.info(f"Loaded ground truth label from {label_path} with shape: {label.shape}")
+
+                        # Ensure labels and predictions have the correct dimensions
+                        if model_type in ['segmentation', 'unetpp']:
+                            if isinstance(label, np.ndarray):
+                                label = torch.tensor(label)
+                            elif isinstance(label, int):
+                                label = torch.tensor([label])
+
+                            if label.ndim == 2:
+                                label = label.unsqueeze(0).unsqueeze(0)
+                            elif label.ndim == 3:
+                                label = label.unsqueeze(1)
+
+                            if prediction.ndim == 3:
+                                prediction = prediction.unsqueeze(0)
+
+                            logger.info(f"Prediction shape: {prediction.shape}, Label shape: {label.shape}")
+
+                            preds = prediction.flatten()
+                            labels = label.flatten()
+
+                            logger.debug("Starting metric calculations...")
+                            dice_score = dice_coefficient(preds, labels)
+                            iou_score = intersection_over_union(preds, labels)
+                            pixel_acc = pixel_accuracy(preds, labels)
+                            mean_acc = mean_accuracy(preds, labels)
+                            mean_iou_val = mean_iou(preds, labels)
+                            bf1 = boundary_f1_score(preds, labels)
+
+                            acc, prec, rec, f1, auc, avg_prec, conf_matrix = calculate_metrics(labels.cpu().numpy(), preds.cpu().numpy())
+                            flash(f'Dice Coefficient: {dice_score}, IoU: {iou_score}, Pixel Accuracy: {pixel_acc}, Mean Accuracy: {mean_acc}, Mean IoU: {mean_iou_val}, BF1: {bf1}', 'success')
+                            return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_tensor.shape, dice=dice_score, iou=iou_score, pixel_accuracy=pixel_acc, mean_accuracy=mean_acc, mean_iou=mean_iou_val, bf1=bf1)
+                        else:
+                            preds = torch.tensor([prediction])
+                            labels = torch.tensor([label])
+
+                            logger.info(f"Prediction shape: {preds.shape}, Label shape: {labels.shape}")
+
+                            acc, prec, rec, f1, auc, avg_prec, conf_matrix = calculate_metrics(labels.cpu().numpy(), preds.cpu().numpy())
+
+                            flash(f'Accuracy: {acc}, Precision: {prec}, Recall: {rec}, F1 Score: {f1}, AUC-ROC: {auc}', 'success')
+                            return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_tensor.shape, accuracy=acc, precision=prec, recall=rec, f1=f1, auc=auc, conf_matrix=conf_matrix)
                     else:
-                        logger.info(f"Loaded ground truth label with shape: unknown")
+                        logger.warning(f"No ground truth label found for {filename}. Skipping metric calculation.")
 
-                    # Ensure labels and predictions have the correct dimensions
-                    if model_type in ['segmentation', 'unetpp']:
-                        # Convert label to tensor if it's a numpy array or an int
-                        if isinstance(label, np.ndarray):
-                            label = torch.tensor(label)
-                        elif isinstance(label, int):
-                            label = torch.tensor([label])
-
-                        # Add batch dimension to label if it's not already there
-                        if label.ndim == 2:  # height x width
-                            label = label.unsqueeze(0).unsqueeze(0)  # Add batch and channel dimensions
-                        elif label.ndim == 3:  # batch x height x width
-                            label = label.unsqueeze(1)  # Add channel dimension
-
-                        if prediction.ndim == 3:
-                            prediction = prediction.unsqueeze(0)  # Add batch dimension
-
-                        logger.info(f"Prediction shape: {prediction.shape}, Label shape: {label.shape}")
-
-                        # Flatten predictions and labels for metric calculations
-                        preds = prediction.flatten()
-                        labels = label.flatten()
-
-                        logger.debug("Starting metric calculations...")
-                        # Compute metrics
-                        logger.debug("Computing Dice Coefficient...")
-                        dice_score = dice_coefficient(preds, labels)
-                        logger.debug(f"Dice Coefficient: {dice_score}")
-                        logger.debug("Computing IoU...")
-                        iou_score = intersection_over_union(preds, labels)
-                        logger.debug(f"IoU: {iou_score}")
-                        logger.debug("Computing Pixel Accuracy...")
-                        pixel_acc = pixel_accuracy(preds, labels)
-                        logger.debug(f"Pixel Accuracy: {pixel_acc}")
-                        logger.debug("Computing Mean Accuracy...")
-                        mean_acc = mean_accuracy(preds, labels)
-                        logger.debug(f"Mean Accuracy: {mean_acc}")
-                        logger.debug("Computing Mean IoU...")
-                        mean_iou_val = mean_iou(preds, labels)
-                        logger.debug(f"Mean IoU: {mean_iou_val}")
-                        logger.debug("Computing Boundary F1 Score...")
-                        bf1 = boundary_f1_score(preds, labels)
-                        logger.debug(f"BF1: {bf1}")
-
-                        flash(f'Dice Coefficient: {dice_score}, IoU: {iou_score}, Pixel Accuracy: {pixel_acc}, Mean Accuracy: {mean_acc}, Mean IoU: {mean_iou_val}, BF1: {bf1}', 'success')
-                        return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_tensor.shape, dice=dice_score, iou=iou_score, pixel_accuracy=pixel_acc, mean_accuracy=mean_acc, mean_iou=mean_iou_val, bf1=bf1)
-                    else:
-                        preds = torch.tensor([prediction])
-                        labels = torch.tensor([label])
-
-                        logger.info(f"Prediction shape: {preds.shape}, Label shape: {labels.shape}")
-
-                        logger.debug("Starting metric calculations...")
-                        logger.debug("Computing Accuracy...")
-                        acc = compute_accuracy(preds, labels)
-                        logger.debug(f"Accuracy: {acc}")
-                        logger.debug("Computing Precision...")
-                        prec = compute_precision(preds, labels)
-                        logger.debug(f"Precision: {prec}")
-                        logger.debug("Computing Recall...")
-                        rec = compute_recall(preds, labels)
-                        logger.debug(f"Recall: {rec}")
-                        logger.debug("Computing F1 Score...")
-                        f1 = compute_f1_score(preds, labels)
-                        logger.debug(f"F1 Score: {f1}")
-                        logger.debug("Computing AUC-ROC...")
-                        auc = compute_auc_roc(preds, labels)
-                        logger.debug(f"AUC-ROC: {auc}")
-                        logger.debug("Computing Confusion Matrix...")
-                        conf_matrix_val = compute_confusion_matrix(preds, labels)
-                        logger.debug(f"Confusion Matrix: {conf_matrix_val}")
-                        
-                        flash(f'Accuracy: {acc}, Precision: {prec}, Recall: {rec}, F1 Score: {f1}, AUC-ROC: {auc}', 'success')
-                        return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_tensor.shape, accuracy=acc, precision=prec, recall=rec, f1=f1, auc=auc, conf_matrix=conf_matrix_val)
-                
+                        flash(f'Prediction: {prediction}, Confidence Score: {confidence_score}', 'success')
+                        return render_template('result.html', prediction=prediction, confidence_score=confidence_score, filename=filename, image_shape=image_tensor.shape)
                 else:
                     flash('Failed to preprocess image.', 'danger')
                     return redirect(request.url)
@@ -407,11 +386,20 @@ def upload_file():
                 logger.error(f"Unsupported image format: {e}")
                 flash('Unsupported image format. Please upload a JPEG, PNG, GIF, or BMP file.', 'danger')
                 return redirect(request.url)
+            except KeyError as e:
+                logger.error(f"Configuration key error: {e}")
+                flash('Configuration key error.', 'danger')
+                return redirect(request.url)
             except Exception as e:
                 logger.error(f"Prediction failed: {e}")
                 flash('An error occurred while processing the file.', 'danger')
                 return redirect(request.url)
     return render_template('upload.html')
+
+
+
+
+
 
 
 

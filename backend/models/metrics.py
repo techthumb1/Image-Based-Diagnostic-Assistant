@@ -44,8 +44,15 @@ def calculate_metrics(y_true, y_pred):
         precision = precision_score(y_true, y_pred, average='weighted', zero_division=1)
         recall = recall_score(y_true, y_pred, average='weighted', zero_division=1)
         f1 = f1_score(y_true, y_pred, average='weighted', zero_division=1)
-        roc_auc = roc_auc_score(y_true, y_pred, multi_class='ovr')
-        avg_precision = average_precision_score(y_true, y_pred, average='weighted')
+        
+        # Check if there are at least two classes to compute ROC AUC
+        if len(set(y_true)) > 1:
+            roc_auc = roc_auc_score(y_true, y_pred, multi_class='ovr')
+            avg_precision = average_precision_score(y_true, y_pred, average='weighted')
+        else:
+            roc_auc = None
+            avg_precision = None
+
         conf_matrix = confusion_matrix(y_true, y_pred)
 
         logging.info(f"Precision: {precision}")
@@ -60,6 +67,7 @@ def calculate_metrics(y_true, y_pred):
     except Exception as e:
         logging.error(f"Error in calculate_metrics: {e}")
         return None, None, None, None, None, None, None
+
 
 def compute_metrics(preds, labels, model_type):
     if model_type in ['segmentation', 'unetpp']:
