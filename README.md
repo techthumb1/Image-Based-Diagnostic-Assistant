@@ -136,4 +136,5 @@ I would like to thank the following resources and communities for their support 
 - [Keras](https://keras.io/)
 - [Hugging Face](https://huggingface.co/)
 - [OpenCV](https://opencv.org/)
-- The open-source community for their valuable libraries and tools.
+
+Lastly, the open-source community for their valuable libraries and tools.

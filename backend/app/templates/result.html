@@ -7,39 +7,49 @@
             Diagnostic Results
         </div>
         <div class="card-body">
-            <h5 class="card-title">Predicted Class Index: {{ prediction }}</h5>
-            <p class="card-text"><strong>Confidence Score:</strong> {{ confidence_score }}<br>
+            {% if classification_results %}
+            <h5 class="card-title">Classification Results</h5>
+            <p class="card-text"><strong>Predicted Class Index:</strong> {{ classification_results.prediction }}</p>
+            <p class="card-text"><strong>Confidence Score:</strong> {{ classification_results.confidence_score }}<br>
                 The confidence score represents the model's certainty in its prediction. Higher values indicate greater confidence, which suggests that the model is more sure about its classification.</p>
+            {% endif %}
             <p class="card-text"><strong>Filename:</strong> {{ filename }}</p>
             <p class="card-text"><strong>Image Shape:</strong> {{ image_shape }}</p>
             <hr>
+            {% if classification_results %}
             <h5>Classification Metrics</h5>
-            <p class="card-text"><strong>Accuracy:</strong> {{ accuracy }}<br>
+            <p class="card-text"><strong>Accuracy:</strong> {{ classification_results.accuracy if classification_results.accuracy is not none else 'N/A' }}<br>
                 Accuracy measures the percentage of correctly classified samples over the total number of samples. A higher accuracy indicates better overall performance of the model in classifying the images correctly.</p>
-            <p class="card-text"><strong>Precision:</strong> {{ precision }}<br>
+            <p class="card-text"><strong>Precision:</strong> {{ classification_results.precision if classification_results.precision is not none else 'N/A' }}<br>
                 Precision indicates the proportion of true positive predictions among all positive predictions. Higher precision means fewer false positives, which is crucial for reducing the risk of misdiagnosis.</p>
-            <p class="card-text"><strong>Recall:</strong> {{ recall }}<br>
+            <p class="card-text"><strong>Recall:</strong> {{ classification_results.recall if classification_results.recall is not none else 'N/A' }}<br>
                 Recall (or sensitivity) measures the proportion of true positive predictions among all actual positives. Higher recall means fewer false negatives, ensuring that most of the actual positive cases are identified.</p>
-            <p class="card-text"><strong>F1 Score:</strong> {{ f1 }}<br>
+            <p class="card-text"><strong>F1 Score:</strong> {{ classification_results.f1 if classification_results.f1 is not none else 'N/A' }}<br>
                 The F1 Score is the harmonic mean of precision and recall, providing a balance between the two metrics. It is useful when the class distribution is imbalanced.</p>
             <p class="card-text"><strong>Confusion Matrix:</strong><br>
                 The confusion matrix provides a detailed breakdown of true positives, true negatives, false positives, and false negatives. It helps in understanding the model's performance across different classes.</p>
-            <pre>{{ conf_matrix }}</pre>
+            <pre>{{ classification_results.conf_matrix if classification_results.conf_matrix is not none else 'N/A' }}</pre>
+            <hr>
+            {% endif %}
+            {% if segmentation_results %}
+            <h5 class="card-title">Segmentation Results</h5>
+            <p class="card-text"><strong>Predicted Mask Shape:</strong> {{ segmentation_results.prediction.shape if segmentation_results.prediction is not none else 'N/A' }}</p>
             <hr>
             <h5>Segmentation Metrics</h5>
-            <p class="card-text"><strong>Dice Coefficient:</strong> {{ dice }}<br>
+            <p class="card-text"><strong>Dice Coefficient:</strong> {{ segmentation_results.dice if segmentation_results.dice is not none else 'N/A' }}<br>
                 The Dice Coefficient measures the overlap between the predicted segmentation and the ground truth. Values range from 0 (no overlap) to 1 (perfect overlap). Higher values indicate better segmentation quality.</p>
-            <p class="card-text"><strong>Intersection over Union (IoU):</strong> {{ iou }}<br>
+            <p class="card-text"><strong>Intersection over Union (IoU):</strong> {{ segmentation_results.iou if segmentation_results.iou is not none else 'N/A' }}<br>
                 IoU, also known as the Jaccard Index, measures the overlap between the predicted and ground truth masks. Values range from 0 (no overlap) to 1 (perfect overlap). Higher IoU indicates better segmentation accuracy.</p>
-            <p class="card-text"><strong>Pixel Accuracy:</strong> {{ pixel_accuracy }}<br>
+            <p class="card-text"><strong>Pixel Accuracy:</strong> {{ segmentation_results.pixel_accuracy if segmentation_results.pixel_accuracy is not none else 'N/A' }}<br>
                 Pixel Accuracy measures the percentage of correctly predicted pixels over the total number of pixels. Higher pixel accuracy means more pixels are correctly classified, indicating better overall performance.</p>
-            <p class="card-text"><strong>Mean Accuracy:</strong> {{ mean_accuracy }}<br>
+            <p class="card-text"><strong>Mean Accuracy:</strong> {{ segmentation_results.mean_accuracy if segmentation_results.mean_accuracy is not none else 'N/A' }}<br>
                 Mean Accuracy measures the average accuracy across all classes. It provides an indication of how well the model performs on average across different regions of the image.</p>
-            <p class="card-text"><strong>Mean IoU:</strong> {{ mean_iou }}<br>
+            <p class="card-text"><strong>Mean IoU:</strong> {{ segmentation_results.mean_iou if segmentation_results.mean_iou is not none else 'N/A' }}<br>
                 Mean IoU is the average Intersection over Union across all classes. It is a comprehensive measure of segmentation performance, especially useful in multi-class segmentation tasks.</p>
-            <p class="card-text"><strong>Boundary F1 Score (BF1):</strong> {{ bf1 }}<br>
+            <p class="card-text"><strong>Boundary F1 Score (BF1):</strong> {{ segmentation_results.bf1 if segmentation_results.bf1 is not none else 'N/A' }}<br>
                 The Boundary F1 Score measures the F1 score of the boundary pixels between the predicted segmentation and the ground truth. It is useful for evaluating the accuracy of the segmentation boundaries, which is crucial for precise medical diagnoses.</p>
             <hr>
+            {% endif %}
             <h5>Overall Assessment</h5>
             <p class="card-text">
                 <strong>Overall Performance:</strong> The metrics presented provide a comprehensive overview of the model's performance. High values in accuracy, precision, recall, and F1 score indicate that the model is reliable in classifying and segmenting medical images. 

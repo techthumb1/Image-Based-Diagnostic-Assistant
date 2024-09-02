@@ -199,6 +199,7 @@ input/TEST/
 input/masks/
 
 # Uploaded Images
+backend/backend/uploads/
 backend/uploads/
 backend/labels/
 backend/masks/
@@ -206,3 +207,27 @@ backend/images/
 
 # Backend models
 backend/models/unetpp_model.pth
+
+# Backend logs
+backend/logs/
+
+# Util
+util/
+
+# Backend
+backend/__pycache__/
+backend/.ipynb_checkpoints/
+
+
+# Uploads
+uploads/
+project_structure.txt/
+
+# Tests
+tests/test_app.py/
+tests/invalid_file.py/
+tests/test_model.py/
+tests/test_predict_failure.py/
+
+# Backend config
+backend/config/test_config.py/

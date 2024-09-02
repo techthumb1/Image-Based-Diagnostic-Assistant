@@ -35,10 +35,19 @@ class ImageDataset(Dataset):
         return image, label
 
 # Data augmentation and preprocessing
+imagenet_mean = [0.485, 0.456, 0.406]
+imagenet_std = [0.229, 0.224, 0.225]
+
 transform = transforms.Compose([
-    transforms.Resize((224, 224)),
+    transforms.Resize(256),
+    transforms.CenterCrop(224),
+    transforms.RandomHorizontalFlip(),
+    transforms.RandomRotation(30),
+    transforms.ColorJitter(brightness=0.4, contrast=0.4, saturation=0.4, hue=0.2),
+    transforms.RandomAffine(degrees=30, translate=(0.2, 0.2), scale=(0.7, 1.3)),
     transforms.ToTensor(),
-])
+    transforms.Normalize(mean=imagenet_mean, std=imagenet_std)
+    ])
 
 # Define the model
 model_unetpp = UnetPlusPlus(encoder_name="resnet34", encoder_weights="imagenet", in_channels=3, classes=2)
@@ -67,40 +76,4 @@ def predict(image_tensor, model):
         if output.size(0) == 2:
             output = output[:1]
         return output
-
-#def load_and_preprocess_images(img_dir, img_size=(224, 224)):
-#    images = []
-#    labels = []
-#
-#    for root, dirs, files in os.walk(img_dir):
-#        for file in files:
-#            file_path = os.path.join(root, file)
-#            img = None
-#            if file.endswith(('.jpg', '.jpeg', '.png', '.bmp')):
-#                img = Image.open(file_path).convert('RGB')
-#                img = img.resize(img_size)
-#                img = np.array(img)
-#            elif file.endswith('.dcm'):
-#                dcm = pydicom.dcmread(file_path)
-#                img = dcm.pixel_array
-#                img = cv2.resize(img, img_size)
-#                img = cv2.cvtColor(img, cv2.COLOR_GRAY2RGB)
-#
-#            if img is not None:
-#                label = os.path.basename(root)
-#                images.append(img)
-#                labels.append(label)
-#
-#    if len(images) != len(labels):
-#        raise ValueError("Number of images and labels do not match.")
-#
-#    images = np.array(images)
-#    labels = np.array(labels)
-#
-#    return images, labels
-
-#def get_train_val_data(img_dir, img_size=(224, 224), test_size=0.2, random_state=42):
-#    images, labels = load_and_preprocess_images(img_dir, img_size)
-#    train_images, val_images, train_labels, val_labels = train_test_split(images, labels, test_size=test_size, random_state=random_state)
-#    return train_images, val_images, train_labels, val_labels
-#
+    

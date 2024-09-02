@@ -1,6 +1,7 @@
-model:
-  pruned_model_path: 'models/segformer_pruned_model'
-  feature_extractor_path: 'models/segformer_feature_extractor'
+MODEL_TYPE: 'classification'  # or 'segmentation' or 'unetpp'
+MODEL_DIR: 'models/'
+pruned_model_path: 'models/segformer_pruned_model'
+feature_extractor_path: 'models/segformer_feature_extractor'
 
 uploads:
   folder: 'backend/uploads'
