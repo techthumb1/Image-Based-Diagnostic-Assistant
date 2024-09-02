@@ -212,7 +212,7 @@ backend/models/unetpp_model.pth
 backend/logs/
 
 # Util
-util/
+util/data_preprocessing.py/
 
 # Backend
 backend/__pycache__/
@@ -231,3 +231,6 @@ tests/test_predict_failure.py/
 
 # Backend config
 backend/config/test_config.py/
+
+# Archive
+archive.zip
