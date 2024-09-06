@@ -1,16 +1,28 @@
 # Image-Based Diagnostic Assistant
 
+![Title Page](input/ibda_images/ibda_title.png)
+
 ## Overview
 
 The **Image-Based Diagnostic Assistant** is a cutting-edge web application designed to assist in diagnosing diseases from medical images. Utilizing advanced deep learning models, this tool provides accurate diagnostic predictions for a variety of medical conditions. The application features a user-friendly interface where medical professionals or basic users can upload images, receive predictions, and access detailed information about the diagnostic process.
 
 ## Features
 
-- **Image Upload**: Users can upload medical images (e.g., MRI, X-ray) for analysis.
-- **Diagnostic Predictions**: The application provides diagnostic predictions based on the uploaded images using state-of-the-art deep learning models.
-- **Informative Pages**: The app includes informational pages such as About, Contact, FAQ, Privacy Policy, and Terms and Conditions.
-- **Production-Ready**: The backend is built using Flask and Gunicorn, while the frontend is developed with React, ensuring scalability and reliability.
-- **Medical Libraries and AI**: Integrates medical libraries and AI architectures like CNNs, U-Net, ViT, and more for enhanced diagnostic capabilities.
+**Image Upload**: Users can upload medical images (e.g., MRI, X-ray) for analysis.
+
+![Home Page](input/ibda_images/home_page.png)
+
+**Diagnostic Predictions**: The application provides diagnostic predictions based on the uploaded images using state-of-the-art deep learning models.
+
+![Prediction Results](input/ibda_images/pred_results.png)
+
+**Informative Pages**: The app includes informational pages such as About, Contact, FAQ, Privacy Policy, and Terms and Conditions.
+
+![Privacy Page](input/ibda_images/privacy_page.png)
+
+**Production-Ready**: The backend is built using Flask and Gunicorn, while the frontend is developed with React, ensuring scalability and reliability.
+
+**Medical Libraries and AI**: Integrates medical libraries and AI architectures like CNNs, U-Net, ViT, and more for enhanced diagnostic capabilities.
 
 ## Tech Stack
 
@@ -90,9 +102,13 @@ The backend provides the following API endpoints:
 2. Select an image of a skin lesion and upload it.
 3. The application will process the image and provide a diagnostic prediction.
 
+![Brain Image](input/ibda_images/brain_img.jpeg)
+
 ### View Results
 
 - After uploading, the `/result` page will display the prediction (benign or malignant) along with confidence scores.
+
+![Updated Results](input/ibda_images/pred_result.png)
 
 ## Future Enhancements
 
