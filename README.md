@@ -1,6 +1,6 @@
 # Image-Based Diagnostic Assistant
 
-![Title Page](input/ibda_images/ibda_title.png)
+![Title Page](input/ibda_images/idba_title2.png)
 
 ## Overview
 
