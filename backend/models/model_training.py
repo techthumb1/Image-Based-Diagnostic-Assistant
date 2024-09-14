@@ -16,7 +16,7 @@ logging.basicConfig(level=logging.INFO)
 def get_efficientnet_model():
     try:
         logger.info("Attempting to load EfficientNet model...")
-        model = EfficientNet.from_pretrained('efficientnet-b0')
+        model = EfficientNet.from_pretrained('efficientnet-b3')
         logger.info("EfficientNet model loaded successfully")
         return model
     except Exception as e:
@@ -51,7 +51,7 @@ def get_unetpp_model():
         logger.info("Attempting to load UNet++ model...")
         model_unetpp = smp.UnetPlusPlus(
             encoder_name="resnet34",
-            encoder_weights="imagenet",  # Set to None because you will load the weights separately
+            encoder_weights=None,  # Set to None because you will load the weights separately
             in_channels=3,
             classes=2
         )
@@ -65,8 +65,8 @@ def get_unetpp_model():
 def get_classification_model(num_classes):
     try:
         logger.info("Attempting to load EfficientNet model for classification...")
-        model = EfficientNet.from_pretrained('efficientnet-b0')
-        model._fc = nn.Linear(model._fc.in_features, num_classes)  # Update the final layer to match num_classes
+        model = EfficientNet.from_pretrained('efficientnet-b3')
+        model._fc = nn.Linear(model._fc.in_features, num_classes)
         logger.info("EfficientNet model for classification loaded successfully")
         return model
     except Exception as e:

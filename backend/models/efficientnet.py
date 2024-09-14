@@ -5,7 +5,7 @@ from efficientnet_pytorch import EfficientNet
 class EfficientNetCustom(nn.Module):
     def __init__(self, num_classes, dropout_rate=0.6):
         super(EfficientNetCustom, self).__init__()
-        self.model = EfficientNet.from_pretrained('efficientnet-b0')
+        self.model = EfficientNet.from_pretrained('efficientnet-b3')
         num_ftrs = self.model._fc.in_features
         self.model._fc = nn.Sequential(
             nn.Dropout(dropout_rate),
@@ -26,3 +26,20 @@ class EfficientNetCustom(nn.Module):
 
 def get_classification_model(num_classes, dropout_rate=0.6):
     return EfficientNetCustom(num_classes, dropout_rate)
+
+
+class LabelSmoothingCrossEntropy(nn.Module):
+    def __init__(self, smoothing=0.1):
+        super(LabelSmoothingCrossEntropy, self).__init__()
+        self.smoothing = smoothing
+
+    def forward(self, preds, target):
+        confidence = 1.0 - self.smoothing
+        log_preds = torch.log_softmax(preds, dim=-1)
+        nll_loss = -log_preds.gather(dim=-1, index=target.unsqueeze(1))
+        nll_loss = nll_loss.squeeze(1)
+        smooth_loss = -log_preds.mean(dim=-1)
+        loss = confidence * nll_loss + self.smoothing * smooth_loss
+        return loss.mean()
+
+criterion = LabelSmoothingCrossEntropy(smoothing=0.1)
