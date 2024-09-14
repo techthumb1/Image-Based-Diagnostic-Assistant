@@ -1,5 +1,3 @@
-# Image-Based Diagnostic Assistant
-
 ![Title Page](input/ibda_images/idba_title2.png)
 
 ## Overview
@@ -14,7 +12,6 @@ The **Image-Based Diagnostic Assistant** is a cutting-edge web application desig
 
 **Diagnostic Predictions**: The application provides diagnostic predictions based on the uploaded images using state-of-the-art deep learning models.
 
-![Prediction Results](input/ibda_images/pred_results.png)
 
 **Informative Pages**: The app includes informational pages such as About, Contact, FAQ, Privacy Policy, and Terms and Conditions.
 

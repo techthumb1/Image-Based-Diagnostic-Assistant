@@ -206,10 +206,12 @@ backend/masks/
 backend/images/
 
 # Backend models
+backend/models/
 backend/models/unetpp_model.pth
 backend/models/effnet_b3_model.pth
 backend/models/effnet_classification_model_best.pth
 backend/models/segmentation_model.pth
+backend/models/effnet_b3_model_best.pth/
 
 # Backend logs
 backend/logs/
@@ -237,7 +239,3 @@ backend/config/test_config.py
 
 # Zip files
 archive.zip
-
-# Backend
-backend/models/effnet_classification_model_best.pth/
-backend/models/effnet_b3_model_best.pth/
