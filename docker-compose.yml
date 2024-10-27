@@ -8,6 +8,9 @@ services:
       - ./frontend:/app
     environment:
       - NODE_ENV=production
+    depends_on:
+      - backend
+    restart: always
 
   backend:
     build: ./backend
@@ -18,8 +21,15 @@ services:
     depends_on:
       - redis
     command: gunicorn --config gunicorn_config.py app:app
+    environment:
+      - SECRET_KEY=${SECRET_KEY}
+      - MODEL_PATH=${MODEL_PATH}
+    env_file:
+      - .env
+    restart: always     
 
   redis:
     image: "redis:alpine"
     ports:
       - "6379:6379"
+    restart: always

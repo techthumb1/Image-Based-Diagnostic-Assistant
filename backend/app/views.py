@@ -9,10 +9,17 @@ from flask_login import LoginManager, UserMixin, login_user, logout_user, login_
 from transformers import SegformerConfig, SegformerForSemanticSegmentation, SegformerImageProcessor
 from safetensors.torch import load_file
 from utils.config import Config, load_yaml_config, apply_config
-from app.utils import allowed_file
+from app.load_preproces import allowed_file
 from models.model_training import get_classification_model, get_unetpp_model, get_efficientnet_model
-from models.data_loader import preprocess_image
-from models.metrics import (
+from preprocessing.data_loader import preprocess_image, transform
+from werkzeug.utils import secure_filename
+from werkzeug.security import generate_password_hash, check_password_hash
+from flask_sqlalchemy import SQLAlchemy
+from huggingface_hub import login
+from safetensors.torch import load_file
+from models.unetpp import UNetPP, load_and_preprocess_image, model_predict
+from efficientnet_pytorch import EfficientNet
+from metrics.metrics import (
     calculate_metrics,
     dice_coefficient,
     intersection_over_union,
@@ -27,15 +34,7 @@ from models.metrics import (
     #compute_auc_roc,
     #compute_confusion_matrix
 )
-from werkzeug.utils import secure_filename
-from werkzeug.security import generate_password_hash, check_password_hash
-from flask_sqlalchemy import SQLAlchemy
-from huggingface_hub import login
-from safetensors.torch import load_file
-from models.data_loader import transform
-from models.unetpp import UNetPP, load_and_preprocess_image, model_predict
-from models.data_loader import preprocess_image
-from efficientnet_pytorch import EfficientNet
+
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*resume_download.*")
 
@@ -52,15 +51,10 @@ warnings.filterwarnings("ignore", category=FutureWarning, message=".*resume_down
 #segmentation_model.eval()
 #unetpp_model.eval()
 
-# Ignore FutureWarnings
-import warnings
-warnings.filterwarnings("ignore", category=FutureWarning, message=".*resume_download.*")
-
 app = Flask(__name__)
 
 config = load_yaml_config('config/config.yaml')
 app.config.update(config)
-
 
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER')
 app.config['ALLOWED_EXTENSIONS'] = set(os.getenv('ALLOWED_EXTENSIONS').split(','))
@@ -123,7 +117,8 @@ try:
         classification_model = EfficientNet.from_name('efficientnet-b0')  # Adjust the architecture name as needed
         
         # Load the state dictionary with strict=False to handle mismatches
-        state_dict = torch.load(os.path.join(model_dir, 'effnet_classification_model_best.pth'), map_location=torch.device('cpu'))
+        state_dict = torch.load(os.path.join(model_dir, 'effnet_b3_model_best.pth'), map_location=torch.device('cpu'))
+
         
         # If the state_dict keys are prefixed with 'model.', you need to remove the prefix
         if list(state_dict.keys())[0].startswith('model.'):
@@ -178,7 +173,6 @@ def preprocess_image(image_path):
     image_tensor = image_tensor.unsqueeze(0)  # Add batch dimension
     return image_tensor
 
-
 # Prediction function
 def classification_predict(image_tensor):
     logger.info("Starting classification prediction...")
@@ -197,8 +191,6 @@ def classification_predict(image_tensor):
     logger.info(f'Predicted class index: {predicted_class_idx}, Confidence score: {confidence_score}')
     return predicted_class_idx, confidence_score
 
-
-
 def segmentation_predict(image_tensor, model_type):
     logger.info("Starting segmentation prediction...")
     inputs = feature_extractor(images=image_tensor, return_tensors="pt", do_rescale=False)['pixel_values'].to(device)
@@ -214,8 +206,6 @@ def segmentation_predict(image_tensor, model_type):
     predicted_mask = outputs.argmax(dim=1).squeeze().cpu().numpy()
     logger.info(f'Predicted mask shape: {predicted_mask.shape}')
     return predicted_mask
-
-
 
 @app.route('/')
 def home():
@@ -259,11 +249,6 @@ def logout():
     flash('You have been logged out.', 'success')
     return redirect(url_for('home'))
 
-
-
-
-
-
 def load_ground_truth_label(image_path, model_type):
     base_name = os.path.basename(image_path).split('.')[0]
     if model_type == 'classification':
@@ -292,20 +277,7 @@ def load_ground_truth_label(image_path, model_type):
     logger.info(f"Loaded ground truth label from {label_path}")
     return label
 
-
-
-
-
-
-
-
-
-
-
-
-
-# Inside your upload_file function
-
+# Add a route for the upload page
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload_file():
