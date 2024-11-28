@@ -3,6 +3,7 @@ import numpy as np
 import logging
 import torch
 import yaml
+from flask import Blueprint
 from PIL import Image, UnidentifiedImageError
 from flask import Flask, render_template, request, redirect, url_for, flash
 from flask_login import LoginManager, UserMixin, login_user, logout_user, login_required, current_user
@@ -10,14 +11,14 @@ from transformers import SegformerConfig, SegformerForSemanticSegmentation, Segf
 from safetensors.torch import load_file
 from utils.config import Config, load_yaml_config, apply_config
 from app.load_preproces import allowed_file
-from models.model_training import get_classification_model, get_unetpp_model, get_efficientnet_model
+from backend.models.model_training import get_classification_model, get_unetpp_model, get_efficientnet_model
 from preprocessing.data_loader import preprocess_image, transform
 from werkzeug.utils import secure_filename
 from werkzeug.security import generate_password_hash, check_password_hash
 from flask_sqlalchemy import SQLAlchemy
 from huggingface_hub import login
 from safetensors.torch import load_file
-from models.unetpp import UNetPP, load_and_preprocess_image, model_predict
+from backend.models.unetpp import UNetPP, load_and_preprocess_image, model_predict
 from efficientnet_pytorch import EfficientNet
 from metrics.metrics import (
     calculate_metrics,
@@ -27,19 +28,13 @@ from metrics.metrics import (
     mean_accuracy,
     mean_iou,
     boundary_f1_score
-    #compute_accuracy,
-    #compute_precision,
-    #compute_recall,
-    #compute_f1_score,
-    #compute_auc_roc,
-    #compute_confusion_matrix
 )
 
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*resume_download.*")
 
 #import sys
-#sys.setrecursionlimit(2000)  # Temporarily increase the recursion limit
+#sys.setrecursionlimit(2000)
 
 # Global Variables
 #classification_model = None
@@ -52,8 +47,21 @@ warnings.filterwarnings("ignore", category=FutureWarning, message=".*resume_down
 #unetpp_model.eval()
 
 app = Flask(__name__)
+blueprint = Blueprint('app', __name__)
 
-config = load_yaml_config('config/config.yaml')
+
+# Load configuration
+base_path = os.path.dirname(os.path.abspath(__file__))
+config_path = os.path.join(base_path, '../config/config.yaml')
+
+try:
+    with open(config_path, 'r') as file:
+        config_data = yaml.safe_load(file)
+except FileNotFoundError:
+    raise FileNotFoundError(f"Config file not found at {config_path}")
+
+
+config = config_data
 app.config.update(config)
 
 app.config['UPLOAD_FOLDER'] = os.getenv('UPLOAD_FOLDER')
@@ -97,7 +105,7 @@ login(token=hf_token, add_to_git_credential=True)
 logger.info("Login successful")
 
 # Load configuration
-config_path = 'config/config.yaml'
+config_path = 'backend/config/config.yaml'
 with open(config_path, 'r') as file:
     config = yaml.safe_load(file)
 
@@ -116,8 +124,9 @@ try:
         logger.info("Loading the EfficientNet model for classification...")
         classification_model = EfficientNet.from_name('efficientnet-b0')  # Adjust the architecture name as needed
         
-        # Load the state dictionary with strict=False to handle mismatches
+        # Load the state dictionary
         state_dict = torch.load(os.path.join(model_dir, 'effnet_b3_model_best.pth'), map_location=torch.device('cpu'))
+        model_path = os.path.join(model_dir, 'effnet_b3_model_best.pth')
 
         
         # If the state_dict keys are prefixed with 'model.', you need to remove the prefix
@@ -395,27 +404,6 @@ def upload_file():
                 flash('An error occurred while processing the file.', 'danger')
                 return redirect(request.url)
     return render_template('upload.html')
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 @app.route('/result')
 def result():

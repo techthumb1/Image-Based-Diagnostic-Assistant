@@ -1,7 +1,9 @@
 version: '3.8'
 services:
   frontend:
-    build: ./frontend
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
     ports:
       - "3000:3000"
     volumes:
@@ -13,7 +15,9 @@ services:
     restart: always
 
   backend:
-    build: ./backend
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
     ports:
       - "8000:8000"
     volumes:
@@ -26,10 +30,23 @@ services:
       - MODEL_PATH=${MODEL_PATH}
     env_file:
       - .env
-    restart: always     
+    restart: always
+    deploy:
+      resources:
+        limits:
+          cpus: "0.5"
+          memory: "512M"
+        reservations:
+          cpus: "0.25"
+          memory: "256M"
 
   redis:
     image: "redis:alpine"
     ports:
       - "6379:6379"
     restart: always
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 3

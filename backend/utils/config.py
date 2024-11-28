@@ -12,9 +12,24 @@ class Config:
     PRUNED_MODEL_PATH = os.getenv('PRUNED_MODEL_PATH', 'backend/models/segformer_pruned_model')
     FEATURE_EXTRACTOR_PATH = os.getenv('FEATURE_EXTRACTOR_PATH', 'backend/models/segformer_feature_extractor')
 
-def apply_config(app):
-    app.config.from_object(Config)
-    
-def load_yaml_config(filepath):
-    with open(filepath, 'r') as file:
-        return yaml.safe_load(file)
+
+class Config:
+    def __init__(self, config_data):
+        self.config = config_data
+
+    @staticmethod
+    def load_config(config_path):
+        with open(config_path, 'r') as file:
+            config_data = yaml.safe_load(file)
+        return Config(config_data)
+
+def load_yaml_config(config_path):
+    with open(config_path, 'r') as file:
+        config_data = yaml.safe_load(file)
+    return config_data
+
+def apply_config(config):
+    for key, value in config.config.items():
+        setattr(Config, key, value)
+
+        

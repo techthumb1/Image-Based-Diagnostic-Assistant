@@ -33,11 +33,17 @@ ENV PATH="/opt/venv/bin:$PATH"
 COPY requirements.txt requirements.txt
 RUN pip install --trusted-host pypi.python.org -r requirements.txt
 
-# Copy the rest of the application
+# Copy the configuration file explicitly
+COPY config/config.yaml /app/config/config.yaml
+
+# Copy the rest of the application into the container
 COPY . .
+
+# Ensure Python recognizes /app as the root of the project
+ENV PYTHONPATH="/app:${PYTHONPATH}"
 
 # Make port 8000 available to the world outside this container
 EXPOSE 8000
 
-# Run app.py when the container launches
+# Run the application using Gunicorn
 CMD ["gunicorn", "--config", "gunicorn_config.py", "app:app"]
