@@ -12,7 +12,9 @@ from sklearn.preprocessing import LabelEncoder
 from sklearn.model_selection import train_test_split
 from torchvision import transforms
 from PIL import Image
+import logging
 
+logger = logging.getLogger(__name__)
 class ImageDataset(Dataset):
     def __init__(self, images, labels, transform=None):
         self.images = images
@@ -59,20 +61,27 @@ optimizer = optim.AdamW(model.parameters(), lr=0.001)
 criterion = nn.CrossEntropyLoss()
 
 def preprocess_image(image_path):
-    # Load image
-    image = Image.open(image_path).convert('RGB')
-    image_tensor = transform(image).unsqueeze(0)  # Add batch dimension
+    from PIL import Image
+    from torchvision import transforms
+
+    preprocess = transforms.Compose([
+        transforms.Resize((224, 224)),
+        transforms.ToTensor(),
+    ])
+
+    image = Image.open(image_path).convert("RGB")
+    image_tensor = preprocess(image)
+    image_tensor = image_tensor.unsqueeze(0)
+    logger.debug(f"Image tensor for {image_path}: {image_tensor}") 
     return image_tensor.to(torch.device("cuda" if torch.cuda.is_available() else "cpu"))
 
 # Define a prediction function
 def predict(image_tensor, model):
     model.eval()
     with torch.no_grad():
-        # Ensure batch size is more than 1
-        if image_tensor.size(0) == 1:  # If batch size is 1, duplicate to create a batch size of 2
+        if image_tensor.size(0) == 1:
             image_tensor = torch.cat([image_tensor, image_tensor], dim=0)
         output = model(image_tensor)
-        # If batch size was artificially increased, revert the batch size for output
         if output.size(0) == 2:
             output = output[:1]
         return output
