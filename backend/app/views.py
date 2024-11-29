@@ -33,19 +33,6 @@ from metrics.metrics import (
 import warnings
 warnings.filterwarnings("ignore", category=FutureWarning, message=".*resume_download.*")
 
-#import sys
-#sys.setrecursionlimit(2000)
-
-# Global Variables
-#classification_model = None
-#segmentation_model = None
-#unetpp_model = None
-#feature_extractor = None
-#
-#classification_model.eval()
-#segmentation_model.eval()
-#unetpp_model.eval()
-
 app = Flask(__name__)
 blueprint = Blueprint('app', __name__)
 
@@ -75,6 +62,7 @@ app.env = 'development'
 apply_config(app)
 
 db = SQLAlchemy(app)
+
 
 # Setup logging
 logging.basicConfig(level=logging.DEBUG)
@@ -186,19 +174,20 @@ def preprocess_image(image_path):
 def classification_predict(image_tensor):
     logger.info("Starting classification prediction...")
     inputs = feature_extractor(images=image_tensor, return_tensors="pt", do_rescale=False)['pixel_values'].to(device)
+    logger.debug(f"Inputs to model: {inputs}")
+    
     with torch.no_grad():
         outputs = classification_model(inputs)
     
     # Handle outputs directly
-    if hasattr(outputs, 'logits'):
-        logits = outputs.logits
-    else:
-        logits = outputs
+    logits = outputs.logits if hasattr(outputs, 'logits') else outputs
+    logger.debug(f"Model logits: {logits}")
     
     predicted_class_idx = logits.argmax(-1).item()
     confidence_score = np.max(torch.nn.functional.softmax(logits, dim=-1).cpu().numpy())
     logger.info(f'Predicted class index: {predicted_class_idx}, Confidence score: {confidence_score}')
     return predicted_class_idx, confidence_score
+
 
 def segmentation_predict(image_tensor, model_type):
     logger.info("Starting segmentation prediction...")
@@ -233,6 +222,7 @@ def register():
             flash('Registration successful! Please log in.', 'success')
             return redirect(url_for('login'))
         except Exception as e:
+            db.session.rollback()
             flash('Registration failed. Username may already be taken.', 'danger')
             logger.error(f"Registration error: {e}")
     return render_template('register.html')
@@ -286,123 +276,115 @@ def load_ground_truth_label(image_path, model_type):
     logger.info(f"Loaded ground truth label from {label_path}")
     return label
 
-# Add a route for the upload page
 @app.route('/upload', methods=['GET', 'POST'])
 @login_required
 def upload_file():
     logger.info("Starting upload_file function...")
     if request.method == 'POST':
         logger.info("Handling POST request...")
-        if 'file' not in request.files:
-            flash('No file part', 'danger')
+        
+        if 'files[]' not in request.files:
+            flash('No files part', 'danger')
             return redirect(request.url)
-        file = request.files['file']
-        if file.filename == '':
-            flash('No selected file', 'danger')
+
+        files = request.files.getlist('files[]')
+        if not files or all(file.filename == '' for file in files):
+            flash('No selected files.', 'danger')
             return redirect(request.url)
-        if file and allowed_file(file.filename, app.config['ALLOWED_EXTENSIONS']):
-            filename = secure_filename(file.filename)
-            filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
 
-            # Ensure the uploads directory exists
-            if not os.path.exists(app.config['UPLOAD_FOLDER']):
-                os.makedirs(app.config['UPLOAD_FOLDER'])
+        results = []
+        if not os.path.exists(app.config['UPLOAD_FOLDER']):
+            os.makedirs(app.config['UPLOAD_FOLDER'])
 
-            file.save(filepath)
-            logger.info(f"File saved at: {filepath}")
-
-            try:
-                image_tensor = preprocess_image(filepath)
-                logger.info(f"Image tensor shape: {image_tensor.shape}")
-                if image_tensor is not None:
-                    if model_type == 'classification':
-                        prediction, confidence_score = classification_predict(image_tensor)
-                        classification_results = {
-                            'prediction': prediction,
-                            'confidence_score': confidence_score,
-                            'accuracy': None,
-                            'precision': None,
-                            'recall': None,
-                            'f1': None,
-                            'auc': None,
-                            'conf_matrix': None
-                        }
-                    else:
-                        prediction = segmentation_predict(image_tensor, model_type)
-                        confidence_score = None
-                        segmentation_results = {
-                            'prediction': prediction,
-                            'dice': None,
-                            'iou': None,
-                            'pixel_accuracy': None,
-                            'mean_accuracy': None,
-                            'mean_iou': None,
-                            'bf1': None
-                        }
+        for file in files:
+            if file and allowed_file(file.filename, app.config['ALLOWED_EXTENSIONS']):
+                filename = secure_filename(file.filename)
+                filepath = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+                file.save(filepath)
+                logger.info(f"File saved at: {filepath}")
+                
+                try:
+                    # Preprocess image
+                    image_tensor = preprocess_image(filepath)
+                    logger.info(f"Image tensor shape: {image_tensor.shape}")
                     
-                    logger.info(f'Prediction: {prediction}, Confidence Score: {confidence_score}, Filename: {filename}, Image Shape: {image_tensor.shape}')
-
-                    # Load ground truth label
+                    # Perform prediction
+                    result = {'filename': filename}
                     try:
-                        label = load_ground_truth_label(filepath, model_type)
-                        label_loaded = True
-                        logger.info(f"Loaded ground truth label from {filepath}")
-                    except FileNotFoundError:
-                        label_loaded = False
-                        logger.warning(f"No ground truth label found for {filename}. Skipping metric calculation.")
+                        classification_prediction, classification_confidence = classification_predict(image_tensor)
+                        result.update({
+                            'classification': {
+                                'type': 'classification',
+                                'prediction': classification_prediction,
+                                'confidence_score': classification_confidence,
+                            }
+                        })
+                    except Exception as e:
+                        logger.error(f"Error in classification for {filename}: {e}")
+                        result['classification'] = {'error': f"Classification failed for {filename}."}
 
-                    if label_loaded:
-                        # Ensure labels and predictions have the correct dimensions
-                        if model_type in ['segmentation', 'unetpp']:
-                            if isinstance(label, np.ndarray):
-                                label = torch.tensor(label)
-                            elif isinstance(label, int):
-                                label = torch.tensor([label])
-                            if label.ndim == 2:
-                                label = label.unsqueeze(0).unsqueeze(0)
-                            elif label.ndim == 3:
-                                label = label.unsqueeze(1)
-                            if prediction.ndim == 3:
-                                prediction = prediction.unsqueeze(0)
-                            logger.info(f"Prediction shape: {prediction.shape}, Label shape: {label.shape}")
-                            preds = prediction.flatten()
-                            labels = label.flatten()
-                            logger.debug("Starting metric calculations...")
-                            segmentation_results['dice'] = dice_coefficient(preds, labels)
-                            segmentation_results['iou'] = intersection_over_union(preds, labels)
-                            segmentation_results['pixel_accuracy'] = pixel_accuracy(preds, labels)
-                            segmentation_results['mean_accuracy'] = mean_accuracy(preds, labels)
-                            segmentation_results['mean_iou'] = mean_iou(preds, labels)
-                            segmentation_results['bf1'] = boundary_f1_score(preds, labels)
-                        else:
-                            preds = torch.tensor([prediction])
-                            labels = torch.tensor([label])
-                            logger.info(f"Prediction shape: {preds.shape}, Label shape: {labels.shape}")
-                            acc, prec, rec, f1, auc, avg_prec, conf_matrix = calculate_metrics(labels.cpu().numpy(), preds.cpu().numpy())
-                            logger.debug("Starting metric calculations...")
-                            classification_results['accuracy'] = acc
-                            classification_results['precision'] = prec
-                            classification_results['recall'] = rec
-                            classification_results['f1'] = f1
-                            classification_results['auc'] = auc
-                            classification_results['conf_matrix'] = conf_matrix
-                    flash(f'Prediction: {prediction}, Confidence Score: {confidence_score}', 'success')
-                    return render_template('result.html', 
-                                           filename=filename, 
-                                           image_shape=image_tensor.shape, 
-                                           classification_results=classification_results if model_type == 'classification' else None, 
-                                           segmentation_results=segmentation_results if model_type in ['segmentation', 'unetpp'] else None)
-                else:
-                    flash('Failed to preprocess image.', 'danger')
-                    return redirect(request.url)
-            except UnidentifiedImageError as e:
-                logger.error(f"Unsupported image format: {e}")
-                flash('Unsupported image format. Please upload a JPEG, PNG, GIF, or BMP file.', 'danger')
-                return redirect(request.url)
-            except Exception as e:
-                logger.error(f"Prediction failed: {e}")
-                flash('An error occurred while processing the file.', 'danger')
-                return redirect(request.url)
+                    try:
+                        segmentation_prediction = segmentation_predict(image_tensor, model_type)
+                        result.update({
+                            'segmentation': {
+                                'type': 'segmentation',
+                                'prediction': segmentation_prediction,
+                                'dice': None,
+                                'iou': None,
+                                'pixel_accuracy': None,
+                                'mean_accuracy': None,
+                                'mean_iou': None,
+                                'bf1': None,
+                            }
+                        })
+
+                        # Ground truth validation
+                        try:
+                            label = load_ground_truth_label(filepath, model_type)
+                            preds = torch.tensor(segmentation_prediction.flatten())
+                            labels = torch.tensor(label.flatten())
+                            result['segmentation'].update({
+                                'dice': dice_coefficient(preds, labels),
+                                'iou': intersection_over_union(preds, labels),
+                                'pixel_accuracy': pixel_accuracy(preds, labels),
+                                'mean_accuracy': mean_accuracy(preds, labels),
+                                'mean_iou': mean_iou(preds, labels),
+                                'bf1': boundary_f1_score(preds, labels),
+                            })
+
+                            result['segmentation'] = {
+                                'type': 'segmentation',
+                                'prediction': segmentation_prediction if 'segmentation_prediction' in locals() else None,
+                                'dice': None,
+                                'iou': None,
+                                'pixel_accuracy': None,
+                                'mean_accuracy': None,
+                                'mean_iou': None,
+                                'bf1': None,
+                                'warning': 'No ground truth found for metrics calculation.' if not label else None,
+                            }
+
+                        except FileNotFoundError:
+                            logger.warning(f"No ground truth label found for {filename}")
+                            result['segmentation']['warning'] = 'No ground truth found for metrics calculation.'
+                    except Exception as e:
+                        logger.error(f"Error in segmentation for {filename}: {e}")
+                        result['segmentation'] = {'error': f"Segmentation failed for {filename}."}
+
+                    # Append the result
+                    results.append(result)
+                except Exception as e:
+                    logger.error(f"Error processing file {filename}: {e}")
+                    flash(f"Error processing file {filename}.", "danger")
+
+        # Render results page if any results were processed
+        if results:
+            return render_template('result.html', results=results)
+        else:
+            flash('No files were successfully processed.', 'danger')
+            return redirect(request.url)
+
+    # If GET request or no processing
     return render_template('upload.html')
 
 @app.route('/result')
